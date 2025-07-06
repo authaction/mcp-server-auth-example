@@ -337,7 +337,3 @@ The server implements proper JSON-RPC 2.0 error handling with standard error cod
 2. **Rate Limiting**: JWKS requests are rate-limited to prevent DoS attacks
 3. **Input Validation**: All tool inputs are validated against schemas
 4. **Error Handling**: Sensitive information is not exposed in error messages
-
-## License
-
-MIT License - see LICENSE file for details.
