@@ -5,7 +5,7 @@ A Model Context Protocol (MCP) server implementation over HTTP with OAuth2/JWT a
 ## Features
 
 - **MCP Protocol Support**: Implements the Model Context Protocol (MCP) specification (v2025-06-18)
-- **OAuth2/JWT Authentication**: Secure authentication using AuthAction or any OAuth2 provider
+- **OAuth2/JWT Authentication**: Secure authentication using AuthAction
 - **HTTP Transport**: RESTful API endpoints for MCP communication
 - **StreamableHTTP Transport**: Server-Sent Events support for MCP Inspector
 - **Tool System**: Extensible tool framework with built-in tools
@@ -47,7 +47,7 @@ npm install
 PORT=3000
 APP_DOMAIN=http://localhost
 
-# AuthAction Configuration (or your OAuth2 provider)
+# AuthAction Configuration
 AUTHACTION_DOMAIN=tenant-name.tenant-region.authaction.com
 AUTHACTION_AUDIENCE=your-authaction-api-identifier
 ```
