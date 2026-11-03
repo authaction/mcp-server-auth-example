@@ -3,7 +3,6 @@ const { expressjwt: jwt } = require("express-jwt");
 const jwksRsa = require("jwks-rsa");
 const dotenv = require("dotenv");
 const cors = require("cors");
-const fetch = require("node-fetch");
 const { handleMcpRequest } = require("./mcp-handler");
 const { handleStreamableHttpRequest } = require("./streamable-http-handler");
 
@@ -25,21 +24,22 @@ const authActionDomain = process.env.AUTHACTION_DOMAIN;
 const authActionAudience = process.env.AUTHACTION_AUDIENCE;
 const authactionIssuer = `https://${authActionDomain}/`;
 
-// OAuth 2.0 Authorization Server Metadata (RFC 8414)
-app.get("/.well-known/oauth-authorization-server", async (req, res) => {
-  const response = await fetch(
-    `https://${authActionDomain}/.well-known/openid-configuration`
-  );
-  const metadata = await response.json();
-
-  res.json(metadata);
-});
-
 // OAuth 2.0 Protected Resource Metadata (RFC 9728)
+//
+// Tells MCP clients that AuthAction is the authorization server for this
+// resource. Clients then read AuthAction's own metadata at
+// https://<tenant>/.well-known/oauth-authorization-server, which advertises
+// `client_id_metadata_document_supported`. Clients such as Claude and VS Code
+// use an HTTPS URL as their client_id, so nothing needs to be registered for
+// them in AuthAction.
+//
+// `resource` must be the API identifier configured in AuthAction (with MCP
+// Client Access enabled). Clients send it as the `resource` parameter and it
+// becomes the token's `aud`.
 app.get("/.well-known/oauth-protected-resource", (req, res) => {
   res.json({
     resource: authActionAudience,
-    authorization_servers: [`${resourceUrl}/.well-known/openid-configuration`],
+    authorization_servers: [authactionIssuer],
     bearer_methods_supported: ["header"],
   });
 });
@@ -92,7 +92,6 @@ app.get("/", (req, res) => {
       mcp: "/mcp (POST, requires JWT)",
       mcpStream: "/mcp/stream (POST, StreamableHTTP, requires JWT)",
       health: "/health (GET)",
-      oauthMetadata: "/.well-known/oauth-authorization-server (GET)",
       resourceMetadata: "/.well-known/oauth-protected-resource (GET)",
     },
   });
@@ -120,9 +119,7 @@ app.use((err, req, res, next) => {
 // Start server
 app.listen(port, () => {
   console.log(`MCP HTTP Server running on ${resourceUrl}`);
-  console.log(
-    `Authorization Server: ${resourceUrl}/.well-known/oauth-authorization-server`
-  );
+  console.log(`Authorization Server: ${authactionIssuer}`);
   console.log(
     `Protected Resource Metadata: ${resourceUrl}/.well-known/oauth-protected-resource`
   );

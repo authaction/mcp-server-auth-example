@@ -6,6 +6,7 @@ A Model Context Protocol (MCP) server implementation over HTTP with OAuth2/JWT a
 
 - **MCP Protocol Support**: Implements the Model Context Protocol (MCP) specification (v2025-06-18)
 - **OAuth2/JWT Authentication**: Secure authentication using AuthAction
+- **No per-client setup**: MCP clients such as Claude, VS Code and Cursor identify themselves with a [Client ID Metadata Document](https://docs.authaction.com/mcp/02-client-id-metadata-documents/), so nothing is registered for them in AuthAction
 - **HTTP Transport**: RESTful API endpoints for MCP communication
 - **StreamableHTTP Transport**: Server-Sent Events support for MCP Inspector
 - **Tool System**: Extensible tool framework with built-in tools
@@ -24,6 +25,14 @@ A Model Context Protocol (MCP) server implementation over HTTP with OAuth2/JWT a
 
 - Node.js 16.0.0 or higher
 - npm or yarn
+
+### Configure AuthAction
+
+1. In the AuthAction dashboard, go to **Applications** > **APIs** and create an API. Use the URL MCP clients will connect to as its identifier, for example `http://localhost:3000/mcp`.
+2. Open the API, go to the **MCP Clients** tab and enable **MCP Client Access**.
+3. Under **Connections for MCP Clients**, turn on the sign-in methods users may use (for example Email Password or Google).
+
+See [MCP Server Authorization](https://docs.authaction.com/mcp/mcp-server-auth/) for details.
 
 ### Installation
 
@@ -49,7 +58,8 @@ APP_DOMAIN=http://localhost
 
 # AuthAction Configuration
 AUTHACTION_DOMAIN=tenant-name.tenant-region.authaction.com
-AUTHACTION_AUDIENCE=your-authaction-api-identifier
+# Must equal the API identifier from step 1 above
+AUTHACTION_AUDIENCE=http://localhost:3000/mcp
 ```
 
 4. Start the server:
@@ -70,8 +80,9 @@ npm run dev
 
 - `GET /` - Server information and available endpoints
 - `GET /health` - Health check endpoint
-- `GET /.well-known/oauth-authorization-server` - OAuth2 authorization server metadata
-- `GET /.well-known/oauth-protected-resource` - OAuth2 protected resource metadata
+- `GET /.well-known/oauth-protected-resource` - OAuth2 protected resource metadata (RFC 9728), naming AuthAction as the authorization server
+
+Authorization server metadata is served by AuthAction itself at `https://{AUTHACTION_DOMAIN}/.well-known/oauth-authorization-server`.
 
 ### Protected Endpoints
 
@@ -234,6 +245,16 @@ Execute a tool.
 
 ## Authentication
 
+### How an MCP client connects
+
+1. The client calls `/mcp` without a token and receives `401` with a `WWW-Authenticate` header pointing to `/.well-known/oauth-protected-resource`.
+2. It reads that document and AuthAction's authorization server metadata.
+3. It sends the user to AuthAction's `/oauth2/authorize` with its metadata URL as `client_id` (for example `https://claude.ai/oauth/claude-code-client-metadata`) and `AUTHACTION_AUDIENCE` as `resource`.
+4. AuthAction validates the client's metadata document, the user signs in, and the client exchanges the code for an access token with PKCE.
+5. The client calls `/mcp` with `Authorization: Bearer <token>`.
+
+### Calling the endpoint
+
 The main MCP endpoint (`/mcp`) requires JWT authentication. Include the JWT token in the Authorization header:
 
 ```
@@ -319,7 +340,7 @@ This will test all endpoints and verify authentication requirements.
 | `PORT`                | Server port            | `3000`             |
 | `APP_DOMAIN`          | Server domain          | `http://localhost` |
 | `AUTHACTION_DOMAIN`   | OAuth2 provider domain | Required           |
-| `AUTHACTION_AUDIENCE` | OAuth2 audience        | Required           |
+| `AUTHACTION_AUDIENCE` | API identifier in AuthAction, sent by clients as `resource` | Required |
 
 ## Error Handling
 
