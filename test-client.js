@@ -21,21 +21,7 @@ async function testMCPEndpoint() {
     console.log("✅ Root endpoint working\n");
 
     // Test OAuth metadata endpoints
-    console.log("3. Testing OAuth metadata endpoints...");
-    try {
-      const oauthResponse = await fetch(
-        `${BASE_URL}/.well-known/oauth-authorization-server`
-      );
-      const oauthData = await oauthResponse.json();
-      console.log("OAuth metadata response:", oauthData);
-      console.log("✅ OAuth metadata endpoint working");
-    } catch (error) {
-      console.log(
-        "⚠️ OAuth metadata endpoint error (expected if AUTHACTION_DOMAIN not set):",
-        error.message
-      );
-    }
-
+    console.log("3. Testing protected resource metadata endpoint...");
     try {
       const resourceResponse = await fetch(
         `${BASE_URL}/.well-known/oauth-protected-resource`
